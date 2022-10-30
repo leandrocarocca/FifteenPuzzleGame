@@ -20,6 +20,6 @@ public class Controller
     }
 
     public void quitGame(){
-        System.out.println("Game ended");
+        System.out.println("Game ended!");
     }
 }

@@ -1,18 +1,26 @@
 package com.example.fifteenpuzzlegame;
 
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuBar;
 import javafx.scene.layout.*;
+import javafx.stage.Stage;
 
-import java.net.URL;
+import java.io.IOException;
 import java.util.*;
 
-public class Controller implements Initializable {
+public class gameController {
     public int numberOfMoves = 0;
+    public int N;
+    public Pane gamePane;
+    public BorderPane borderPane;
+    public Label gameLabel;
+    private ArrayList<Integer> winningCoordinates;
     @FXML
     private  GridPane puzzleGridPane;
     @FXML
@@ -24,26 +32,21 @@ public class Controller implements Initializable {
     @FXML
     private MenuBar menuBar;
 
-    private int N;
-    private ArrayList<Integer> winningCoordinates;
-
-    @Override
-    public void initialize(URL url, ResourceBundle resourceBundle)
+    public void startGame(int n)
     {
-        Scanner scan = new Scanner(System.in);
-        System.out.println("Skriv in N: ");
-        N = scan.nextInt();
+        this.N = n;
         for (int i = 0; i <= N; i++) {
-                ColumnConstraints column = new ColumnConstraints();
-                column.setPercentWidth(100d / N);
-                puzzleGridPane.getColumnConstraints().add(column);
-                RowConstraints row = new RowConstraints();
-                row.setPercentHeight(100d / N);
-                puzzleGridPane.getRowConstraints().add(row);
+            ColumnConstraints column = new ColumnConstraints();
+            column.setPercentWidth(100d / N);
+            puzzleGridPane.getColumnConstraints().add(column);
+            RowConstraints row = new RowConstraints();
+            row.setPercentHeight(100d / N);
+            puzzleGridPane.getRowConstraints().add(row);
         }
         Button[] arr = createArrayOfButtons(N, N);
         allocateButtons(N, N, arr);
         winningCoordinates = getCoordinates();
+
     }
 
     public void restartGame()
@@ -54,11 +57,10 @@ public class Controller implements Initializable {
         Button[] arr = shuffleButtons(createArrayOfButtons(N, N));
         allocateButtons(N, N, arr);
         if(!isSolvable()){
-            System.out.println("Ej lösbart");
-            //restartGame();
+            gameLabel.setText("Puzzle is not solvable");
         }
         else{
-            System.out.println("Lösbar!");
+            gameLabel.setText("Puzzle is solvable");
         }
 
     }
@@ -91,7 +93,9 @@ public class Controller implements Initializable {
                     numberOfMoves++;
                     numberOfMovesLabel.setText("Number of moves: " + (numberOfMoves));
                 }
-                checkWin();
+                if(checkWin()){
+                    gameLabel.setText("YOU WON!");
+                }
             });
             GridPane.setHgrow(button, Priority.ALWAYS);
             button.setPrefSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -177,22 +181,24 @@ public class Controller implements Initializable {
         }
     }
 
-    public void checkWin(){
-        ArrayList<Integer> coordinates = getCoordinates();
-        int index = 0;
-        boolean win = true;
-        for(int i: coordinates){
-            if(i != winningCoordinates.get(index)){
-                win = false;
+    public boolean checkWin(){
+        //ArrayList<Integer> coordinates = getCoordinates();
+        Button b;
+        int counter = 1;
+        for(int col = 0; col < N - 1; col++){
+            for(int row = 0; row < N ; row++){
+                b = getButtonByCoordinates(col,row);
+                if(b.getText().equals(String.valueOf(counter)))
+                {
+                    counter++;
+                }
+                else{
+                    return false;
+                }
             }
-            index++;
         }
-        if (win){
-            System.out.println("Du vann!");
-        }
-        else {
-            System.out.println("Ingen vinst");
-        }
+        b = getButtonByCoordinates(N-1, N-1);
+        return b.getId().equals("emptySlot");
     }
 
     public boolean isSolvable(){
@@ -202,7 +208,7 @@ public class Controller implements Initializable {
         If N is even, puzzle instance is solvable if
         the blank is on an even row counting from the bottom (second-last, fourth-last, etc.) and number of inversions is odd.
         the blank is on an odd row counting from the bottom (last, third-last, fifth-last, etc.) and number of inversions is even.
-    For all other cases, the puzzle instance is not solvable.
+        For all other cases, the puzzle instance is not solvable.
          */
         int row;
         int col;
@@ -223,7 +229,7 @@ public class Controller implements Initializable {
                 rowOfEmptySlot = GridPane.getRowIndex(button);
             }
         }
-        int rowOfEmptySlotFromBottom = Math.abs(rowOfEmptySlot - (N - 1));
+        int rowOfEmptySlotFromBottom = Math.abs(rowOfEmptySlot + 1 - (N - 1) );
         if(N % 2 == 0){
             if(numberOfInversions % 2 != 0){
                 return rowOfEmptySlotFromBottom % 2 == 0;
@@ -251,34 +257,41 @@ public class Controller implements Initializable {
         Button b2;
         int val1;
         int val2;
-        int j;
         int inversions = 0;
         for (int i = 0; i < arrayOfButtons.size() - 1; i++){
             b1 = arrayOfButtons.get(i);
-            j = i + 1;
-            b2 = arrayOfButtons.get(j);
-            try
-            {
-                val1 = Integer.parseInt(b1.getText());
-                val2 = Integer.parseInt(b2.getText());
-                val2++;
-                if(val1 == val2){
-                    inversions++;
+            for(int j = i + 1; j < arrayOfButtons.size(); j++){
+                b2 = arrayOfButtons.get(j);
+                try
+                {
+                    val1 = Integer.parseInt(b1.getText());
+                    val2 = Integer.parseInt(b2.getText());
+
+                    if(val1 > val2){
+                        inversions++;
+                    }
+                }
+                catch (NumberFormatException e){
+                    System.out.println("Cannot parse a string that does not represent a number.");
+                }
+                catch (Exception e){
+                    e.printStackTrace();
                 }
             }
-            catch (NumberFormatException e){
-                System.out.println("Cannot parse a string that does not represent a number.");
-            }
-            catch (Exception e){
-                e.printStackTrace();
-            }
+
+
 
         }
-
         return inversions;
     }
-
-
+    public void switchToWelcomeScene(ActionEvent event) throws IOException
+    {
+        FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("welcomeScene.fxml"));
+        Stage stage = (Stage)((Node) event.getSource()).getScene().getWindow();
+        Scene scene = new Scene(fxmlLoader.load());
+        stage.setScene(scene);
+        stage.show();
+    }
 
 
 
